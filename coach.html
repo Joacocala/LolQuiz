@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adivina el Campeón - LoL</title>
+    <!-- Tailwind CSS para estilos rápidos y responsivos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome para los iconos de redes sociales y trofeos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2kQJ2fF08P/j2F/b2bYwP8eI/c5y+j2I/a/wA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1b2028 0%, #23283a 100%);
+            color: #e6edf3;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            padding: 2rem;
+            border-radius: 1.5rem;
+            background: rgba(18, 22, 31, 0.95);
+            border: 1px solid #2f343e;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            margin: 0 auto;
+        }
+
+        .navbar {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            padding: 1rem 0;
+            margin-bottom: 1rem;
+        }
+
+        .ability-image {
+            width: 150px;
+            height: 150px;
+            border-radius: 12px;
+            border: 4px solid #7966ff;
+            box-shadow: 0 0 15px rgba(121, 102, 255, 0.4);
+            margin-bottom: 2rem;
+            transition: all 0.3s ease;
+        }
+        .ability-image.correct-flash {
+            animation: correct-pulse 0.5s ease;
+        }
+        .ability-image.incorrect-shake {
+            animation: shake 0.3s ease;
+        }
+        @keyframes correct-pulse {
+            0% { transform: scale(1); box-shadow: 0 0 15px rgba(121, 102, 255, 0.4); }
+            50% { transform: scale(1.05); box-shadow: 0 0 25px rgba(40, 167, 69, 0.8); }
+            100% { transform: scale(1); box-shadow: 0 0 15px rgba(121, 102, 255, 0.4); }
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+        .answer-button {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            width: 100%;
+            background: #2b333c;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        .answer-button:hover:not(.disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(121, 102, 255, 0.3);
+            background: #3b424d;
+        }
+        .answer-button.correct {
+            background-color: #28a745 !important;
+            box-shadow: 0 0 15px rgba(40, 167, 69, 0.8);
+            transform: scale(1.02);
+        }
+        .answer-button.incorrect {
+            background-color: #dc3545 !important;
+            box-shadow: 0 0 15px rgba(220, 53, 69, 0.8);
+        }
+        .answer-button.disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .start-button {
+            transition: all 0.2s ease;
+            background: linear-gradient(90deg, #7966ff, #9933ff);
+            box-shadow: 0 5px 20px rgba(121, 102, 255, 0.5);
+        }
+        .start-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(121, 102, 255, 0.8);
+        }
+        .score-display {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #fff;
+            background: linear-gradient(90deg, #7966ff 60%, #9933ff 100%);
+            padding: 0.5rem 1.2rem;
+            border-radius: 9999px;
+            box-shadow: 0 0 12px rgba(121, 102, 255, 0.4);
+            z-index: 10;
+        }
+        .feedback-message {
+            margin-top: 1.5rem;
+            min-height: 2rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            background: rgba(18, 22, 31, 0.95);
+            border: 1px solid #2f343e;
+        }
+        .social-button {
+            transition: all 0.2s ease;
+            color: #e6edf3;
+            background-color: #20242a;
+            padding: 0.75rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        .social-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(121, 102, 255, 0.3);
+        }
+        #loading-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #7966ff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Ajustes responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem;
+            }
+            
+            .score-display {
+                top: 0.5rem;
+                right: 0.5rem;
+                font-size: 1rem;
+                padding: 0.4rem 1rem;
+            }
+        }
+
+        /* Nuevos estilos para la disposición principal */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr; /* Una sola columna por defecto */
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .scoreboard-section {
+            background: rgba(18, 22, 31, 0.95);
+            border: 1px solid #2f343e;
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem; /* Espacio para separar en móvil */
+        }
+        
+        .game-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        /* Icono del trofeo en el scoreboard */
+        .fa-trophy {
+            font-size: 1.2rem;
+            vertical-align: middle;
+        }
+
+        /* En pantallas más grandes, usar dos columnas */
+        @media (min-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 350px 1fr;
+                min-height: 100vh;
+            }
+            .scoreboard-section {
+                position: sticky;
+                top: 1rem;
+                height: calc(100vh - 2rem);
+                overflow-y: auto;
+                margin-bottom: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="main-layout">
+        <!-- Scoreboard Section -->
+        <aside class="scoreboard-section">
+            <h3 class="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-600">
+                <i class="fa-solid fa-trophy text-yellow-400 mr-2"></i>Top 10 Puntajes
+            </h3>
+            <ul id="scoreboard" class="space-y-2 text-lg">
+                <!-- Puntajes se llenan por JS -->
+            </ul>
+        </aside>
+
+        <!-- Game Section -->
+        <main class="game-section">
+            <h2 class="text-3xl md:text-4xl font-extrabold mb-4 text-center text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-600">
+                Skill Quiz League Of Legends
+            </h2>
+            
+            <nav class="navbar">
+                <a href="#" target="_blank" class="social-button hover:text-pink-500">
+                    <i class="fab fa-instagram text-2xl"></i>
+                </a>
+                <a href="#" target="_blank" class="social-button hover:text-blue-500">
+                    <i class="fab fa-tiktok text-2xl"></i>
+                </a>
+            </nav>
+
+            <div id="app" class="container relative">
+                <div id="score-display" class="score-display left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-8 top-6 md:top-6 z-20">
+                    Puntuación: 0
+                </div>
+                <h1 class="text-4xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-600">Adivina la Habilidad</h1>
+                <!-- Pantalla de inicio -->
+                <div id="start-screen">
+                    <p class="text-xl mb-8 text-gray-400">¿Puedes identificar al campeón por una de sus habilidades?</p>
+                    <input id="playerName" type="text" maxlength="20" placeholder="Tu nombre" class="mb-4 w-full px-4 py-2 rounded-lg bg-[#23283a] text-white text-lg outline-none border border-[#2f343e] focus:border-[#7966ff] transition" autocomplete="off">
+                    <button id="startButton" class="start-button text-white font-bold py-4 px-8 rounded-full text-xl hover:scale-105 transition-transform">
+                        ¡Empezar!
+                    </button>
+                </div>
+                <!-- Pantalla de carga -->
+                
+                <!-- Pantalla del juego -->
+                <div id="game-screen" class="hidden w-full text-center">
+                    <p class="text-xl mb-4 font-bold text-gray-300">¿A qué campeón pertenece esta habilidad?</p>
+                    <img id="ability-image" src="" alt="Habilidad de Campeón" class="ability-image mx-auto" onerror="this.onerror=null; this.src='https://placehold.co/150x150/12161f/e6edf3?text=Error';">
+                    <div id="answers-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                        <!-- Los botones de respuesta se generarán aquí -->
+                    </div>
+                    <div id="feedback-message" class="feedback-message text-center"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script>
+        // Datos de las preguntas con las URL de las habilidades del CDN de Riot Games (ddragon)
+        // Se ha mejorado la estructura para incluir más detalles sobre la habilidad.
+        const questions = [
+            {
+                abilityImage: "https://ddragon.leagueoflegends.com/cdn/14.10.1/img/spell/JinxQ.png",
+                correctChampion: "Jinx",
+                options: ["Jinx", "Ezreal", "Miss Fortune", "Caitlyn"],
+                abilityName: "¡Cambiazo!",
+                abilityDescription: "Jinx modifica su arma básica alternando entre Pium Pium, su ametralladora, y Espinas, su lanzacohetes. Pium Pium otorga velocidad de ataque, mientras que Espinas causa daño de área."
+            },
+            {
+                abilityImage: "https://ddragon.leagueoflegends.com/cdn/14.10.1/img/spell/AhriQ.png",
+                correctChampion: "Ahri",
+                options: ["Ahri", "Lux", "Syndra", "Seraphine"],
+                abilityName: "Orbe del Engaño",
+                abilityDescription: "Ahri lanza y recupera su orbe, infligiendo daño mágico en la ida y daño verdadero en el regreso."
+            },
+            {
+                abilityImage: "https://ddragon.leagueoflegends.com/cdn/14.10.1/img/spell/ZedR.png",
+                correctChampion: "Zed",
+                options: ["Zed", "Talon", "Kayn", "Akali"],
+                abilityName: "Marca de la Muerte",
+                abilityDescription: "Zed se vuelve intangible y marca a un campeón enemigo. Después de 3 segundos, la marca detona causando daño adicional basado en el daño causado mientras la marca estaba activa."
+            },
+            {
+                abilityImage: "https://ddragon.leagueoflegends.com/cdn/14.10.1/img/spell/YasuoQ.png",
+                correctChampion: "Yasuo",
+                options: ["Yasuo", "Yone", "Master Yi", "Riven"],
+                abilityName: "Tempestad de Acero",
+                abilityDescription: "Yasuo empuja su espada hacia adelante, dañando a todos los enemigos en línea recta. Al acumular dos cargas, genera un tornado."
+            },
+            {
+                abilityImage: "https://ddragon.leagueoflegends.com/cdn/14.10.1/img/spell/LuxR.png",
+                correctChampion: "Lux",
+                options: ["Lux", "Xerath", "Ziggs", "Vel'Koz"],
+                abilityName: "Chispa Final",
+                abilityDescription: "Lux dispara un rayo de luz que daña a todos los enemigos en el área y aplica su pasiva."
+            },
+            {
+                abilityImage: "https://ddragon.leagueoflegends.com/cdn/14.10.1/img/spell/LeeSinR.png",
+                correctChampion: "Lee Sin",
+                options: ["Lee Sin", "Vi", "Jarvan IV", "Xin Zhao"],
+                abilityName: "Furia del Dragón",
+                abilityDescription: "Lee Sin patea a un enemigo, lanzándolo hacia atrás y dañando a todos los enemigos que atraviesa."
+            },
+            {
+                abilityImage: "https://ddragon.leagueoflegends.com/cdn/14.10.1/img/spell/KatarinaR.png",
+                correctChampion: "Katarina",
+                options: ["Katarina", "Samira", "Akali", "LeBlanc"],
+                abilityName: "Loto Mortal",
+                abilityDescription: "Katarina canaliza y lanza dagas a los enemigos cercanos, causando daño mágico masivo."
+            },
+            {
+                abilityImage: "https://ddragon.leagueoflegends.com/cdn/14.10.1/img/spell/TeemoR.png",
+                correctChampion: "Teemo",
+                options: ["Teemo", "Twitch", "Singed", "Cassiopeia"],
+                abilityName: "Trampa Venenosa",
+                abilityDescription: "Teemo coloca un hongo venenoso invisible que explota cuando un enemigo lo pisa."
+            },
+            {
+                abilityImage: "https://ddragon.leagueoflegends.com/cdn/14.10.1/img/spell/MalphiteR.png",
+                correctChampion: "Malphite",
+                options: ["Malphite", "Ornn", "Maokai", "Sion"],
+                abilityName: "Fuerza Imparable",
+                abilityDescription: "Malphite se lanza hacia una ubicación, dañando y lanzando por los aires a los enemigos en el área de impacto."
+            },
+            {
+                abilityImage: "https://ddragon.leagueoflegends.com/cdn/14.10.1/img/spell/BlitzcrankQ.png",
+                correctChampion: "Blitzcrank",
+                options: ["Blitzcrank", "Thresh", "Nautilus", "Pyke"],
+                abilityName: "Agarre Cohete",
+                abilityDescription: "Blitzcrank lanza su brazo para agarrar a un enemigo y traerlo hacia él."
+            },
+            {
+                abilityImage: "https://ddragon.leagueoflegends.com/cdn/14.10.1/img/spell/DariusR.png",
+                correctChampion: "Darius",
+                options: ["Darius", "Garen", "Urgot", "Sett"],
+                abilityName: "Guillotina de Noxus",
+                abilityDescription: "Darius salta sobre un campeón enemigo y lo ejecuta con su hacha, reiniciándose si consigue el asesinato."
+            },
+            {
+                abilityImage: "https://ddragon.leagueoflegends.com/cdn/14.10.1/img/spell/AkaliR.png",
+                correctChampion: "Akali",
+                options: ["Akali", "Katarina", "Zed", "Talon"],
+                abilityName: "Ejecución Perfecta",
+                abilityDescription: "Akali se lanza en una dirección, dañando enemigos. Puede reactivarse para ejecutar a enemigos con poca vida."
+            },
+        ];
+
+        // Elementos del DOM
+        const startScreen = document.getElementById('start-screen');
+        const startButton = document.getElementById('startButton');
+        const loadingScreen = document.getElementById('loading-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const abilityImage = document.getElementById('ability-image');
+        const answersContainer = document.getElementById('answers-container');
+        const scoreDisplay = document.getElementById('score-display');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const scoreboardElement = document.getElementById('scoreboard');
+        const playerNameInput = document.getElementById('playerName');
+
+        // Variables de estado del juego
+        let gameQuestions = [];
+        const TOTAL_QUESTIONS = 10;
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let answered = false;
+        let playerName = "";
+
+        // Función para barajar un array (Algoritmo de Fisher-Yates)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        const imageCache = new Map();
+        const IMAGE_LOAD_TIMEOUT = 5000;
+
+        function preloadImage(url) {
+            if (imageCache.has(url)) {
+                return Promise.resolve(url);
+            }
+
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                let timeoutId;
+
+                const cleanup = () => {
+                    clearTimeout(timeoutId);
+                    img.onload = null;
+                    img.onerror = null;
+                };
+
+                timeoutId = setTimeout(() => {
+                    cleanup();
+                    reject(new Error(`Timeout loading image: ${url}`));
+                }, IMAGE_LOAD_TIMEOUT);
+
+                img.onload = () => {
+                    cleanup();
+                    imageCache.set(url, true);
+                    resolve(url);
+                };
+
+                img.onerror = () => {
+                    cleanup();
+                    reject(new Error(`Failed to load image: ${url}`));
+                };
+
+                img.src = url;
+            }).catch(error => {
+                console.warn(error.message);
+                return url;
+            });
+        }
+
+        // Función para empezar el juego
+        function startGame() {
+            playerName = playerNameInput.value.trim();
+            if (!playerName) {
+                playerNameInput.classList.add('border-red-500');
+                playerNameInput.placeholder = "¡Ingresa tu nombre!";
+                playerNameInput.focus();
+                return;
+            }
+            
+            playerNameInput.classList.remove('border-red-500');
+            startScreen.classList.add('hidden');
+            loadingScreen.classList.remove('hidden');
+
+            gameQuestions = [...questions];
+            shuffleArray(gameQuestions);
+            gameQuestions = gameQuestions.slice(0, TOTAL_QUESTIONS);
+            
+            currentQuestionIndex = 0;
+            score = 0;
+            
+            const gameImages = gameQuestions.map(q => q.abilityImage);
+            Promise.all(gameImages.map(preloadImage))
+                .then(() => {
+                    loadingScreen.classList.add('hidden');
+                    gameScreen.classList.remove('hidden');
+                    updateScoreDisplay();
+                    loadQuestion();
+                })
+                .catch(error => {
+                    console.warn('Some images failed to load:', error);
+                    loadingScreen.classList.add('hidden');
+                    gameScreen.classList.remove('hidden');
+                    updateScoreDisplay();
+                    loadQuestion();
+                });
+        }
+        
+        // Función para actualizar el marcador
+        function updateScoreDisplay() {
+            scoreDisplay.innerHTML = `
+                <span>Puntuación: ${score}</span>
+                <span class="text-sm ml-2">${currentQuestionIndex + 1}/${TOTAL_QUESTIONS}</span>
+            `;
+        }
+
+        // Función para cargar la siguiente pregunta
+        function loadQuestion() {
+            if (currentQuestionIndex >= gameQuestions.length) {
+                endGame();
+                return;
+            }
+
+            answered = false;
+            feedbackMessage.textContent = '';
+            abilityImage.classList.remove('correct-flash', 'incorrect-shake');
+
+            const currentQuestion = gameQuestions[currentQuestionIndex];
+            
+            preloadImage(currentQuestion.abilityImage)
+                .then(() => {
+                    abilityImage.src = currentQuestion.abilityImage;
+                    if (currentQuestionIndex + 1 < gameQuestions.length) {
+                        preloadImage(gameQuestions[currentQuestionIndex + 1].abilityImage);
+                    }
+                    if (currentQuestionIndex + 2 < gameQuestions.length) {
+                        preloadImage(gameQuestions[currentQuestionIndex + 2].abilityImage);
+                    }
+                })
+                .catch(() => {
+                    abilityImage.src = 'https://placehold.co/150x150/12161f/e6edf3?text=Error';
+                });
+
+            shuffleArray(currentQuestion.options);
+            answersContainer.innerHTML = '';
+            currentQuestion.options.forEach(championName => {
+                const button = document.createElement('button');
+                button.textContent = championName;
+                button.className = 'answer-button text-white py-3 px-4 rounded-lg font-semibold text-lg hover:bg-gray-600';
+                button.onclick = () => handleAnswerClick(championName);
+                answersContainer.appendChild(button);
+            });
+        }
+
+        // Manejar el clic en un botón de respuesta
+        function handleAnswerClick(championName) {
+            if (answered) return;
+            answered = true;
+
+            const currentQuestion = gameQuestions[currentQuestionIndex];
+            const isCorrect = championName === currentQuestion.correctChampion;
+            const buttons = answersContainer.querySelectorAll('.answer-button');
+
+            buttons.forEach(button => {
+                button.classList.add('disabled');
+                button.style.pointerEvents = 'none';
+
+                if (button.textContent === currentQuestion.correctChampion) {
+                    button.classList.add('correct');
+                } else if (button.textContent === championName) {
+                    button.classList.add('incorrect');
+                }
+            });
+
+            if (isCorrect) {
+                score++;
+                updateScoreDisplay();
+                feedbackMessage.innerHTML = `
+                    <div class="text-green-500">¡Correcto!</div>
+                    <div class="text-lg mt-2">
+                        <span class="text-purple-400 font-bold">${currentQuestion.abilityName}</span>
+                        <p class="text-base mt-1 text-gray-300">${currentQuestion.abilityDescription}</p>
+                    </div>
+                    <div class="text-sm mt-2 text-gray-400">Pregunta ${currentQuestionIndex + 1} de ${TOTAL_QUESTIONS}</div>
+                `;
+                abilityImage.classList.add('correct-flash');
+            } else {
+                feedbackMessage.innerHTML = `
+                    <div class="text-red-500">¡Incorrecto! La respuesta era ${currentQuestion.correctChampion}</div>
+                    <div class="text-lg mt-2">
+                        <span class="text-purple-400 font-bold">${currentQuestion.abilityName}</span>
+                        <p class="text-base mt-1 text-gray-300">${currentQuestion.abilityDescription}</p>
+                    </div>
+                    <div class="text-sm mt-2 text-gray-400">Pregunta ${currentQuestionIndex + 1} de ${TOTAL_QUESTIONS}</div>
+                `;
+                abilityImage.classList.add('incorrect-shake');
+            }
+
+            setTimeout(() => {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < TOTAL_QUESTIONS) {
+                    loadQuestion();
+                } else {
+                    endGame();
+                }
+            }, 4000);
+        }
+        
+        // Finalizar el juego y mostrar el resultado final
+        function endGame() {
+            gameScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            addScore(playerName, score);
+            renderScoreboard();
+            alert(`¡Juego terminado! ${playerName}, tu puntuación final es: ${score} de ${TOTAL_QUESTIONS}.`);
+        }
+
+        // --- Persistencia de puntajes con localStorage ---
+        function getScoreboard() {
+            try {
+                return JSON.parse(localStorage.getItem('lolSkillQuizScores') || '[]');
+            } catch {
+                return [];
+            }
+        }
+
+        function saveScoreboard(scores) {
+            localStorage.setItem('lolSkillQuizScores', JSON.stringify(scores));
+        }
+
+        function addScore(name, score) {
+            const scores = getScoreboard();
+            scores.push({ name, score });
+            scores.sort((a, b) => b.score - a.score);
+            saveScoreboard(scores.slice(0, 10));
+        }
+
+        function renderScoreboard() {
+            const scores = getScoreboard();
+            scoreboardElement.innerHTML = '';
+            if (scores.length === 0) {
+                scoreboardElement.innerHTML = '<li class="text-gray-400">Sin puntajes aún.</li>';
+                return;
+            }
+            scores.forEach((entry, idx) => {
+                scoreboardElement.innerHTML += `
+                    <li class="flex justify-between items-center bg-[#23283a] p-3 rounded-lg shadow-md">
+                        <div class="flex items-center">
+                            <span class="font-bold w-6 text-center">${idx + 1}.</span> 
+                            <span class="text-white ml-2 truncate">${entry.name}</span>
+                        </div>
+                        <span class="text-indigo-400 font-bold">${entry.score}</span>
+                    </li>
+                `;
+            });
+        }
+
+        // Event Listeners
+        startButton.addEventListener('click', startGame);
+
+        // --- Renderiza el scoreboard al cargar la página ---
+        renderScoreboard();
+    </script>
+</body>
+</html>
